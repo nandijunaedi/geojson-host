@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  #map {
+    width: 100%;
+    height: 100vh; /* wajib untuk Looker Studio */
+  }
+  .info-box {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  }
+</style>
+</head>
+
+<body>
+
+<div class="info-box">
+  <strong>Area 2 Polygon</strong><br/>
+  engpar_A2_dissolved.geojson
+</div>
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+const GEOJSON_URL =
+  "https://nandijunaedi.github.io/geojson-host/engpar_A2_dissolved.geojson";
+
+const map = L.map("map", { zoomControl: true }).setView([-6.2, 106.8], 10);
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19,
+}).addTo(map);
+
+function polygonStyle() {
+  return {
+    color: "#ff6600",
+    weight: 1,
+    fillColor: "#ffcc80",
+    fillOpacity: 0.4
+  };
+}
+
+function onEachFeature(feature, layer) {
+  const props = feature.properties || {};
+  let html = "";
+
+  for (const k in props) {
+    html += `<b>${k}</b>: ${props[k]}<br>`;
+  }
+
+  layer.bindPopup(html);
+}
+
+fetch(GEOJSON_URL)
+  .then(r => r.json())
+  .then(data => {
+    const g = L.geoJSON(data, {
+      style: polygonStyle,
+      onEachFeature
+    }).addTo(map);
+
+    map.fitBounds(g.getBounds());
+  });
+
+// AUTO RESIZE FOR LOOKER STUDIO
+window.addEventListener("message", function(e) {
+  if (e.data && e.data.type === "looker_resize") {
+    document.getElementById("map").style.height = e.data.height + "px";
+    map.invalidateSize();
+  }
+});
+</script>
+
+</body>
+</html>
