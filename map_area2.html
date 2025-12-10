@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Map Area 2 - engpar_A2_dissolved</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+    .info-box {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="info-box">
+    <strong>Area 2 Polygon</strong><br/>
+    Sumber: engpar_A2_dissolved.geojson
+  </div>
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script>
+    // URL GeoJSON kamu di github
+    const GEOJSON_URL = "https://nandijunaedi.github.io/geojson-host/engpar_A2_dissolved.geojson";
+
+    // Inisialisasi peta
+    const map = L.map("map").setView([0, 118], 5); // center kasar Indonesia
+
+    // Base map (OpenStreetMap)
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    // Style default polygon
+    function polygonStyle(feature) {
+      return {
+        color: "#ff6600",      // garis
+        weight: 1,
+        opacity: 0.8,
+        fillColor: "#ffcc80",  // isi
+        fillOpacity: 0.5
+      };
+    }
+
+    // Pop-up info: sesuaikan dengan nama field di GeoJSON (DESA, KECAMATAN, dsb.)
+    function onEachFeature(feature, layer) {
+      let props = feature.properties || {};
+      let lines = [];
+
+      // Ambil beberapa property umum kalau ada
+      if (props.DESA) lines.push("<b>DESA:</b> " + props.DESA);
+      if (props.KECAMATAN) lines.push("<b>KECAMATAN:</b> " + props.KECAMATAN);
+      if (props.KABUPATEN) lines.push("<b>KABUPATEN:</b> " + props.KABUPATEN);
+
+      // Kalau tidak tahu field-nya, tampilkan semua property
+      if (lines.length === 0) {
+        for (const key in props) {
+          lines.push("<b>" + key + ":</b> " + props[key]);
+        }
+      }
+
+      if (lines.length > 0) {
+        layer.bindPopup(lines.join("<br/>"));
+      }
+    }
+
+    // Ambil GeoJSON dari Cloudflare
+    fetch(GEOJSON_URL)
+      .then(resp => {
+        if (!resp.ok) {
+          throw new Error("Gagal load GeoJSON: " + resp.status);
+        }
+        return resp.json();
+      })
+      .then(data => {
+        const geoLayer = L.geoJSON(data, {
+          style: polygonStyle,
+          onEachFeature: onEachFeature
+        }).addTo(map);
+
+        try {
+          map.fitBounds(geoLayer.getBounds());
+        } catch (e) {
+          console.warn("Tidak bisa fitBounds, mungkin geometri kosong:", e);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Tidak bisa memuat polygon. Cek URL GeoJSON di Cloudflare.");
+      });
+  </script>
+</body>
+</html>
